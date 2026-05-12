@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>คำนวณราคาขาย Delivery</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #219150;
+        }
+        .result-box {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f6f3;
+            border-left: 5px solid #27ae60;
+            border-radius: 6px;
+            display: none;
+        }
+        .result-box p {
+            margin: 8px 0;
+            font-size: 15px;
+        }
+        .highlight {
+            font-size: 20px;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        .net-income {
+            font-size: 18px;
+            font-weight: bold;
+            color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>ตั้งราคา Delivery ไม่ให้ขาดทุน</h2>
+    
+    <div class="form-group">
+        <label for="cost">ต้นทุนสินค้า (บาท)</label>
+        <input type="number" id="cost" placeholder="เช่น 60" min="0">
+    </div>
+
+    <div class="form-group">
+        <label for="profit">กำไรที่ต้องการ (% จากราคาขาย)</label>
+        <input type="number" id="profit" placeholder="เช่น 20" min="0" max="99">
+    </div>
+
+    <div class="form-group">
+        <label for="platform">เลือกแพลตฟอร์ม</label>
+        <select id="platform">
+            <option value="0.321">Line Man (GP 30% + VAT)</option>
+            <option value="0.321">GrabFood (GP 30% + VAT)</option>
+            <option value="0.3424">foodpanda (GP 32% + VAT)</option>
+            <option value="0.3424">ShopeeFood (GP 32% + VAT)</option>
+        </select>
+    </div>
+
+    <button onclick="calculatePrice()">คำนวณราคาขาย</button>
+
+    <div class="result-box" id="resultBox">
+        <p>🏷️ ราคาขายที่ควรตั้ง: <span class="highlight" id="recPrice">0</span> บาท</p>
+        <hr>
+        <p>💸 โดนหักค่า GP+VAT: <span id="gpDeduct">0</span> บาท</p>
+        <p>💰 ร้านจะได้รับเงินจริง: <span class="net-income" id="netIncome">0</span> บาท</p>
+        <p>📈 กำไรสุทธิ: <span id="actualProfit">0</span> บาท</p>
+    </div>
+</div>
+
+<script>
+    function calculatePrice() {
+        // รับค่าจาก Form
+        let cost = parseFloat(document.getElementById('cost').value);
+        let profitPercent = parseFloat(document.getElementById('profit').value);
+        let gpRate = parseFloat(document.getElementById('platform').value);
+
+        // ตรวจสอบความถูกต้องของข้อมูล
+        if (isNaN(cost) || isNaN(profitPercent)) {
+            alert("กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้องครับ");
+            return;
+        }
+
+        // แปลง % กำไรเป็นทศนิยม
+        let profitRate = profitPercent / 100;
+
+        // ป้องกันกรณีที่ผลรวม %GP และ %กำไร เกิน 100%
+        if (profitRate + gpRate >= 1) {
+            alert("เปอร์เซ็นต์กำไรที่ต้องการสูงเกินไป ทำให้ไม่สามารถคำนวณราคาขายได้ครับ");
+            return;
+        }
+
+        // สูตรคำนวณ: ราคาขาย = ต้นทุน / (1 - %กำไร - %GP)
+        let recommendedPrice = cost / (1 - profitRate - gpRate);
+        
+        // คำนวณรายละเอียดต่างๆ
+        let gpDeduct = recommendedPrice * gpRate;
+        let netIncome = recommendedPrice - gpDeduct;
+        let actualProfit = netIncome - cost;
+
+        // ปัดเศษให้เป็นทศนิยม 2 ตำแหน่ง
+        document.getElementById('recPrice').innerText = Math.ceil(recommendedPrice); // ปัดขึ้นเสมอเพื่อไม่ให้ขาดทุน
+        document.getElementById('gpDeduct').innerText = gpDeduct.toFixed(2);
+        document.getElementById('netIncome').innerText = netIncome.toFixed(2);
+        document.getElementById('actualProfit').innerText = actualProfit.toFixed(2);
+
+        // แสดงผล
+        document.getElementById('resultBox').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
